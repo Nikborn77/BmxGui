@@ -120,6 +120,12 @@ namespace BmxGui
         public string GetAudioParameter(int index, string name)
             => Get(StreamKind.Audio, index, name);
 
+        public string GetTextParameter(int index, string name)
+    => Get(StreamKind.Text, index, name);
+
+        public string GetOtherParameter(int index, string name)
+            => Get(StreamKind.Other, index, name);
+
         public string GetGOP()
             => Get(StreamKind.Video, 0, "GOP");
 

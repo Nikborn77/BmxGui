@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -22,11 +23,11 @@ namespace BmxGui
         private OpenFileDialog ofd;
         private DataGridView dgvChecks;
         private Button btnFixAndSave;
+        private BindingSource toolResultBindingSource;
+        private System.ComponentModel.IContainer components;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
-        private BindingSource toolResultBindingSource;
-        private System.ComponentModel.IContainer components;
         private ProgressBar progressBar;
 
         public MainForm()
@@ -39,6 +40,7 @@ namespace BmxGui
             components = new System.ComponentModel.Container();
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             cmbTool = new ComboBox();
             btnSettings = new Button();
@@ -68,7 +70,6 @@ namespace BmxGui
             cmbTool.Name = "cmbTool";
             cmbTool.Size = new Size(121, 23);
             cmbTool.TabIndex = 0;
-            cmbTool.SelectedIndex = 0;
             // 
             // btnSettings
             // 
@@ -134,7 +135,8 @@ namespace BmxGui
             dgvChecks.AllowUserToDeleteRows = false;
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
             dgvChecks.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
-            dgvChecks.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dgvChecks.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dgvChecks.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.FromArgb(40, 40, 40);
             dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
@@ -144,14 +146,14 @@ namespace BmxGui
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dgvChecks.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dgvChecks.Columns.AddRange(new DataGridViewColumn[] { dataGridViewTextBoxColumn1, dataGridViewTextBoxColumn2, dataGridViewTextBoxColumn3 });
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = SystemColors.Window;
-            dataGridViewCellStyle3.Font = new Font("Consolas", 10F);
-            dataGridViewCellStyle3.ForeColor = SystemColors.ControlText;
-            dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(70, 130, 180);
-            dataGridViewCellStyle3.SelectionForeColor = Color.White;
-            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
-            dgvChecks.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = SystemColors.Window;
+            dataGridViewCellStyle4.Font = new Font("Consolas", 10F);
+            dataGridViewCellStyle4.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(70, 130, 180);
+            dataGridViewCellStyle4.SelectionForeColor = Color.White;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.False;
+            dgvChecks.DefaultCellStyle = dataGridViewCellStyle4;
             dgvChecks.EnableHeadersVisualStyles = false;
             dgvChecks.GridColor = Color.LightGray;
             dgvChecks.Location = new Point(12, 129);
@@ -181,6 +183,8 @@ namespace BmxGui
             // dataGridViewTextBoxColumn3
             // 
             dataGridViewTextBoxColumn3.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
+            dataGridViewTextBoxColumn3.DefaultCellStyle = dataGridViewCellStyle3;
             dataGridViewTextBoxColumn3.HeaderText = "Детали";
             dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
             dataGridViewTextBoxColumn3.ReadOnly = true;
@@ -414,12 +418,14 @@ namespace BmxGui
                 var checks = new (string name, Func<(string, string, Color)> func)[]
                 {
                     ("Соответствие стандартам", () => CheckStandards(metadata, mi)),
+                    ("Профиль MXF (AS-)", () => CheckASProfileCompliance(metadata, mi)),
                     ("Целостность контейнера", () => CheckContainer(metadata, mi)),
                     ("Потоки данных", () => CheckStreams(mi)),
                     ("Метаданные", () => CheckMetadata(metadata)),
                     ("Кодирование", () => CheckEncoding(mi)),
                     ("FrameRate / Timecode", () => CheckFrameRateTimecode(mi)),
                     ("Аудио каналы", () => CheckAudioChannels(mi)),
+                    ("Аудио Essence Mapping", () => CheckAudioEssenceMapping(mi)),
                     ("Синхронизация A/V", () => CheckDurationSync2(mi)),
                     ("Видео параметры", () => CheckVideoSpecs(mi)),
                     ("Audio Sample Rate", () => CheckAudioSampleRate(mi)),
@@ -431,6 +437,7 @@ namespace BmxGui
                     ("Битрейт / Профиль", () => CheckBitrateProfile(mi)),
                     ("Timecode Continuity", () => CheckTimecodeContinuity(mi)),
                     ("CRC32 Essence", () => CheckCrc32(filePath)),
+                    ("FrameCount Consistency", () => CheckFrameCountConsistency(mi)),
                     ("APP Issues", () => CheckAppIssues(filePath))
                 };
 
@@ -536,6 +543,7 @@ namespace BmxGui
             dgvChecks.Rows[idx].Height = 28;
         }
 
+        /*
         private (string, string, Color) CheckStandards(string metadata, MediaInfoHelper mi)
         {
             // Пробуем вытащить Operational Pattern через разные ключи
@@ -565,6 +573,181 @@ namespace BmxGui
                 return ("ОК", "Operational Pattern: OP1a (из metadata.txt)", Color.Green);
 
             return ("Ошибка", "Не удалось определить Operational Pattern (ST 377-1 не подтверждён)", Color.Red);
+        }
+        */
+
+        public (string status, string details, Color color) CheckStandards(string metadata, MediaInfoHelper mi)
+        {
+            StringBuilder report = new StringBuilder();
+            string status = "ОК";
+            Color color = Color.Green;
+            bool hasIssues = false;
+
+            // Проверка SMPTE ST 377-1 (основной MXF стандарт)
+            report.AppendLine("SMPTE ST 377-1 (MXF File Format):");
+            bool isValidMXF = !string.IsNullOrWhiteSpace(mi.GetGeneralParameter("Format")) &&
+                              mi.GetGeneralParameter("Format").Contains("MXF", StringComparison.OrdinalIgnoreCase);
+            if (!isValidMXF)
+            {
+                report.AppendLine("  ✗ Не удалось подтвердить MXF-формат (отсутствует или неверный Format).");
+                status = "Ошибка";
+                color = Color.Red;
+                hasIssues = true;
+            }
+            else
+            {
+                report.AppendLine("  ✓ Формат MXF подтверждён.");
+                // Проверка Header, Body, Footer (ST 377-1 требует их наличия)
+                if (metadata.Contains("Invalid MXF header", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine("  ✗ Ошибка: Неверный Header Partition (нарушение ST 377-1).");
+                    status = "Ошибка";
+                    color = Color.Red;
+                    hasIssues = true;
+                }
+                else if (metadata.Contains("Missing Index Table", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine("  ✗ Ошибка: Отсутствует Index Table (нарушение ST 377-1).");
+                    status = "Ошибка";
+                    color = Color.Red;
+                    hasIssues = true;
+                }
+                else
+                {
+                    report.AppendLine("  ✓ Header, Body и Footer соответствуют ST 377-1.");
+                }
+            }
+
+            // Проверка Operational Pattern (ST 378 для OP1a, ST 390 для OP-Atom)
+            report.AppendLine("\nOperational Pattern (SMPTE ST 378/ST 390):");
+            string[] opKeys = { "OperationalPattern", "Format_Profile", "Format_Commercial_IfAny", "Format" };
+            string op = opKeys.Select(key => mi.GetGeneralParameter(key))
+                             .FirstOrDefault(val => !string.IsNullOrWhiteSpace(val)) ?? "";
+
+            if (!string.IsNullOrEmpty(op))
+            {
+                if (op.Contains("OP1a", StringComparison.OrdinalIgnoreCase) ||
+                    op.Contains("OP-1a", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine($"  ✓ OP1a подтверждён (SMPTE ST 378).");
+                    // Проверка на множественные пакеты (нарушение OP1a)
+                    if (metadata.Contains("Multiple material packages", StringComparison.OrdinalIgnoreCase))
+                    {
+                        report.AppendLine("  ✗ Ошибка: Обнаружено несколько Material Packages (нарушение ST 378).");
+                        status = "Ошибка";
+                        color = Color.Red;
+                        hasIssues = true;
+                    }
+                }
+                else if (op.Contains("OPAtom", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine($"  ✓ OP-Atom подтверждён (SMPTE ST 390).");
+                    // Проверка структуры атома
+                    if (metadata.Contains("Invalid atom structure", StringComparison.OrdinalIgnoreCase))
+                    {
+                        report.AppendLine("  ✗ Ошибка: Неверная структура атома (нарушение ST 390).");
+                        status = "Ошибка";
+                        color = Color.Red;
+                        hasIssues = true;
+                    }
+                }
+                else
+                {
+                    report.AppendLine($"  ⚠ Предупреждение: Нестандартный Operational Pattern ({op}).");
+                    status = "Предупреждение";
+                    color = Color.Orange;
+                    hasIssues = true;
+                }
+            }
+            else
+            {
+                // Fallback на metadata.txt
+                if (metadata.Contains("OP1a", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine("  ✓ OP1a подтверждён (из metadata.txt, SMPTE ST 378).");
+                }
+                else if (metadata.Contains("OP-Atom", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine("  ✓ OP-Atom подтверждён (из metadata.txt, SMPTE ST 390).");
+                }
+                else
+                {
+                    report.AppendLine("  ✗ Ошибка: Не удалось определить Operational Pattern (ST 377-1/ST 378/ST 390 не подтверждены).");
+                    status = "Ошибка";
+                    color = Color.Red;
+                    hasIssues = true;
+                }
+            }
+
+            // Проверка SMPTE ST 379 (Generic Container)
+            report.AppendLine("\nSMPTE ST 379 (Generic Container):");
+            string essenceContainer = mi.GetGeneralParameter("EssenceContainer") ?? "";
+            if (string.IsNullOrEmpty(essenceContainer))
+            {
+                report.AppendLine("  ✗ Ошибка: Essence Container не определён (нарушение ST 379).");
+                status = "Ошибка";
+                color = Color.Red;
+                hasIssues = true;
+            }
+            else
+            {
+                report.AppendLine($"  ✓ Essence Container: {essenceContainer}.");
+                if (metadata.Contains("Invalid Generic Container label", StringComparison.OrdinalIgnoreCase))
+                {
+                    report.AppendLine("  ✗ Ошибка: Неверный Generic Container label (нарушение ST 379).");
+                    status = "Ошибка";
+                    color = Color.Red;
+                    hasIssues = true;
+                }
+            }
+
+            // Проверка SMPTE ST 380 (Descriptive Metadata)
+            report.AppendLine("\nSMPTE ST 380 (Descriptive Metadata Scheme-1):");
+            if (metadata.Contains("Missing DMS metadata set", StringComparison.OrdinalIgnoreCase))
+            {
+                report.AppendLine("  ✗ Ошибка: Отсутствует DMS metadata set (нарушение ST 380).");
+                status = "Ошибка";
+                color = Color.Red;
+                hasIssues = true;
+            }
+            else
+            {
+                report.AppendLine("  ✓ Descriptive Metadata подтверждена (или не требуется).");
+            }
+            /*
+            // Проверка SMPTE ST 382 (AES3 Audio Mapping)
+            report.AppendLine("\nSMPTE ST 382 (AES3 Audio Mapping):");
+            string audioFormat = mi.GetAudioParameter("Format") ?? "";
+           if (audioFormat.Contains("AES3", StringComparison.OrdinalIgnoreCase) ||
+                audioFormat.Contains("PCM", StringComparison.OrdinalIgnoreCase))
+            {
+                report.AppendLine("  ✓ Аудио соответствует AES3/PCM (ST 382).");
+            }
+            else if (metadata.Contains("Audio essence mismatch", StringComparison.OrdinalIgnoreCase))
+            {
+                report.AppendLine("  ✗ Ошибка: Несоответствие аудио essence (нарушение ST 382).");
+                status = "Ошибка";
+                color = Color.Red;
+                hasIssues = true;
+            }
+            
+            else
+            {
+                report.AppendLine("  ⚠ Предупреждение: Аудио формат не определён или не проверен.");
+                if (!hasIssues) { status = "Предупреждение"; color = Color.Orange; }
+            }
+            */
+            // Финальный статус
+            if (!hasIssues)
+            {
+                report.AppendLine("\nИтог: Файл полностью соответствует проверенным стандартам SMPTE.");
+            }
+            else
+            {
+                report.AppendLine("\nИтог: Обнаружены отклонения от стандартов SMPTE. См. детали выше.");
+            }
+
+            return (status, report.ToString(), color);
         }
 
         private (string, string, Color) CheckContainer(string metadata, MediaInfoHelper mi)
@@ -805,6 +988,9 @@ namespace BmxGui
 
             if (string.IsNullOrEmpty(timecode))
                 return ("Предупреждение", "Отсутствует Timecode", Color.Orange);
+
+            if (timecode.Contains(";")) return ("ОК", "Drop-Frame TC (NTSC 29.97/59.94)", Color.Green);
+
 
             if (frameRate.StartsWith("25") && timecode.Contains("DF", StringComparison.OrdinalIgnoreCase))
                 return ("Ошибка", $"Drop-Frame при 25 fps (timecode: {timecode})", Color.Red);
@@ -1068,6 +1254,113 @@ namespace BmxGui
 
             return ("ОК", "APP timecode проверено", Color.Green);
         }
+
+        private (string, string, Color) CheckAudioEssenceMapping(MediaInfoHelper mi)
+        {
+            string format = mi.GetAudioParameter(0, "Format") ?? "";
+            if (format.Contains("AES3", StringComparison.OrdinalIgnoreCase) ||
+                format.Contains("PCM", StringComparison.OrdinalIgnoreCase))
+                return ("ОК", $"Audio essence: {format} (соответствует SMPTE ST 382)", Color.Green);
+
+            if (format.Contains("AAC") || format.Contains("MPEG"))
+                return ("Предупреждение", $"Нестандартный аудиокодек ({format}) для MXF", Color.Orange);
+
+            return ("Ошибка", $"Неизвестный аудио формат ({format})", Color.Red);
+        }
+
+        private (string, string, Color) CheckFrameCountConsistency(MediaInfoHelper mi)
+        {
+            if (!int.TryParse(mi.GetVideoParameter(0, "FrameCount"), out int frameCount))
+                return ("Предупреждение", "Не удалось определить количество кадров", Color.Orange);
+
+            if (!double.TryParse(mi.GetVideoParameter(0, "Duration"), out double duration))
+                return ("Предупреждение", "Не удалось определить длительность видео", Color.Orange);
+
+            if (!double.TryParse(mi.GetVideoParameter(0, "FrameRate"), out double fps))
+                fps = 25.0;
+
+            double expected = duration / 1000.0 * fps;
+            double diff = Math.Abs(expected - frameCount);
+
+            if (diff < 1)
+                return ("ОК", $"FrameCount совпадает: {frameCount}", Color.Green);
+
+            return ("Предупреждение", $"Расхождение: {diff:F1} кадров (FrameCount={frameCount}, расчёт={expected:F1})", Color.Orange);
+        }
+
+        private (string, string, Color) CheckASProfileCompliance(string metadata, MediaInfoHelper mi)
+        {
+            try
+            {
+                string formatProfile = mi.GetGeneralParameter("Format_Profile") ?? "";
+                string commercialName = mi.GetGeneralParameter("Format_Commercial_IfAny") ?? "";
+                string appFormat = mi.GetGeneralParameter("Application_Format") ?? "";
+                string op = mi.GetGeneralParameter("OperationalPattern") ?? "";
+                string formatVersion = mi.GetGeneralParameter("Format_Version") ?? "";
+
+                string meta = metadata.ToUpperInvariant();
+                string concat = $"{formatProfile} {commercialName} {appFormat} {formatVersion} {meta}".ToUpperInvariant();
+
+                // === AS-11 (DPP, UK broadcasters) ===
+                if (concat.Contains("AS-11") || concat.Contains("AS11"))
+                {
+                    // проверки по признакам
+                    if (op.Contains("OP1A", StringComparison.OrdinalIgnoreCase) &&
+                        mi.GetVideoParameter(0, "Format").Contains("MPEG", StringComparison.OrdinalIgnoreCase))
+                        return ("ОК", "Соответствует AS-11 (DPP Broadcast OP1a, XDCAM HD422)", Color.Green);
+
+                    return ("Предупреждение", "Возможный AS-11 (неполное соответствие, проверьте OP1a и MPEG2)", Color.Orange);
+                }
+
+                // === AS-10 (Avid/Production MXF) ===
+                if (concat.Contains("AS-10") || concat.Contains("AS10"))
+                {
+                    if (op.Contains("OP1A") &&
+                        (mi.GetVideoParameter(0, "Format").Contains("DNX", StringComparison.OrdinalIgnoreCase) ||
+                         mi.GetVideoParameter(0, "Format").Contains("DNxHD", StringComparison.OrdinalIgnoreCase)))
+                        return ("ОК", "Соответствует AS-10 (Avid DNxHD OP1a)", Color.Green);
+
+                    return ("Предупреждение", "Возможный AS-10 (проверьте DNxHD и OP1a)", Color.Orange);
+                }
+
+                // === AS-03 (Contribution MXF) ===
+                if (concat.Contains("AS-03") || concat.Contains("AS03"))
+                {
+                    if (op.Contains("OP1A") &&
+                        mi.GetVideoParameter(0, "Format").Contains("MPEG", StringComparison.OrdinalIgnoreCase))
+                        return ("ОК", "Соответствует AS-03 (Contribution MPEG2 OP1a)", Color.Green);
+
+                    return ("Предупреждение", "Возможный AS-03 (проверьте кодек MPEG2 и OP1a)", Color.Orange);
+                }
+
+                // === AS-02 (Versioning MXF) ===
+                if (concat.Contains("AS-02") || concat.Contains("AS02"))
+                {
+                    if (op.Contains("OPATOM") || op.Contains("OP1B") || op.Contains("OP1A"))
+                        return ("ОК", "Соответствует AS-02 (Multi-package OPAtom/OP1a)", Color.Green);
+
+                    return ("Предупреждение", "Возможный AS-02 (структура OPAtom не подтверждена)", Color.Orange);
+                }
+
+                // === Auto-detect by codec/pattern ===
+                string vcodec = mi.GetVideoParameter(0, "Format") ?? "";
+                if (op.Contains("OP1A") && vcodec.Contains("MPEG", StringComparison.OrdinalIgnoreCase))
+                    return ("ОК", "Похож на AS-11 DPP или AS-03 (MPEG2 OP1a)", Color.Green);
+
+                if (op.Contains("OP1A") && vcodec.Contains("DNX", StringComparison.OrdinalIgnoreCase))
+                    return ("ОК", "Похож на AS-10 (DNxHD OP1a)", Color.Green);
+
+                if (op.Contains("OPATOM"))
+                    return ("ОК", "Похож на AS-02 (OPAtom structure)", Color.Green);
+
+                return ("Предупреждение", "Не удалось определить профиль AS-XX (возможно, нестандартный MXF)", Color.Orange);
+            }
+            catch (Exception ex)
+            {
+                return ("Предупреждение", "Ошибка CheckASProfileCompliance: " + ex.Message, Color.Orange);
+            }
+        }
+
 
     }
 }
