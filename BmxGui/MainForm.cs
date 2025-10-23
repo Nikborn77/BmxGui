@@ -25,6 +25,8 @@ namespace BmxGui
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn1;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn2;
         private DataGridViewTextBoxColumn dataGridViewTextBoxColumn3;
+        private BindingSource toolResultBindingSource;
+        private System.ComponentModel.IContainer components;
         private ProgressBar progressBar;
 
         public MainForm()
@@ -34,6 +36,7 @@ namespace BmxGui
 
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
@@ -46,24 +49,26 @@ namespace BmxGui
             btnOpenOutput = new Button();
             lblStatus = new Label();
             dgvChecks = new DataGridView();
+            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
+            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
             progressBar = new ProgressBar();
             txtLog = new TextBox();
             btnFixAndSave = new Button();
             ofd = new OpenFileDialog();
-            dataGridViewTextBoxColumn1 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn2 = new DataGridViewTextBoxColumn();
-            dataGridViewTextBoxColumn3 = new DataGridViewTextBoxColumn();
+            toolResultBindingSource = new BindingSource(components);
             ((System.ComponentModel.ISupportInitialize)dgvChecks).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)toolResultBindingSource).BeginInit();
             SuspendLayout();
             // 
             // cmbTool
             // 
             cmbTool.Items.AddRange(new object[] { "raw2bmx", "bmxtranswrap", "mxf2raw", "bmxparse", "h264dump", "j2cdump", "jp2extract", "movdump", "vc2dump" });
-            cmbTool.SelectedIndex = 2;
             cmbTool.Location = new Point(93, 12);
             cmbTool.Name = "cmbTool";
             cmbTool.Size = new Size(121, 23);
-            //cmbTool.TabIndex = 0;
+            cmbTool.TabIndex = 0;
+            cmbTool.SelectedIndex = 0;
             // 
             // btnSettings
             // 
@@ -129,6 +134,7 @@ namespace BmxGui
             dgvChecks.AllowUserToDeleteRows = false;
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.False;
             dgvChecks.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
+            dgvChecks.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.FromArgb(40, 40, 40);
             dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
@@ -156,31 +162,6 @@ namespace BmxGui
             dgvChecks.Size = new Size(1148, 620);
             dgvChecks.TabIndex = 10;
             // 
-            // progressBar
-            // 
-            progressBar.Location = new Point(93, 71);
-            progressBar.Name = "progressBar";
-            progressBar.Size = new Size(496, 23);
-            progressBar.TabIndex = 9;
-            // 
-            // txtLog
-            // 
-            txtLog.Location = new Point(595, 12);
-            txtLog.Multiline = true;
-            txtLog.Name = "txtLog";
-            txtLog.ScrollBars = ScrollBars.Both;
-            txtLog.Size = new Size(565, 111);
-            txtLog.TabIndex = 8;
-            // 
-            // btnFixAndSave
-            // 
-            btnFixAndSave.Location = new Point(12, 100);
-            btnFixAndSave.Name = "btnFixAndSave";
-            btnFixAndSave.Size = new Size(75, 23);
-            btnFixAndSave.TabIndex = 11;
-            btnFixAndSave.Text = "Исправить";
-            btnFixAndSave.Click += BtnFixAndSave_Click;
-            // 
             // dataGridViewTextBoxColumn1
             // 
             dataGridViewTextBoxColumn1.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
@@ -204,6 +185,36 @@ namespace BmxGui
             dataGridViewTextBoxColumn3.Name = "dataGridViewTextBoxColumn3";
             dataGridViewTextBoxColumn3.ReadOnly = true;
             // 
+            // progressBar
+            // 
+            progressBar.Location = new Point(93, 71);
+            progressBar.Name = "progressBar";
+            progressBar.Size = new Size(496, 23);
+            progressBar.TabIndex = 9;
+            // 
+            // txtLog
+            // 
+            txtLog.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtLog.Location = new Point(595, 12);
+            txtLog.Multiline = true;
+            txtLog.Name = "txtLog";
+            txtLog.ScrollBars = ScrollBars.Both;
+            txtLog.Size = new Size(565, 111);
+            txtLog.TabIndex = 8;
+            // 
+            // btnFixAndSave
+            // 
+            btnFixAndSave.Location = new Point(12, 100);
+            btnFixAndSave.Name = "btnFixAndSave";
+            btnFixAndSave.Size = new Size(75, 23);
+            btnFixAndSave.TabIndex = 11;
+            btnFixAndSave.Text = "Исправить";
+            btnFixAndSave.Click += BtnFixAndSave_Click;
+            // 
+            // toolResultBindingSource
+            // 
+            toolResultBindingSource.DataSource = typeof(ToolResult);
+            // 
             // MainForm
             // 
             ClientSize = new Size(1172, 761);
@@ -223,6 +234,7 @@ namespace BmxGui
             StartPosition = FormStartPosition.CenterScreen;
             Text = "BMX GUI - Visual wrapper for bmx tools";
             ((System.ComponentModel.ISupportInitialize)dgvChecks).EndInit();
+            ((System.ComponentModel.ISupportInitialize)toolResultBindingSource).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -262,6 +274,20 @@ namespace BmxGui
             }
 
             string args = BuildArgs(tool);
+            string outputDir = Path.GetDirectoryName(txtInput.Text) ?? ".";
+
+            // Specific arguments for each tool
+            if (tool == "mxf2raw")
+            {
+                args += $" --all-tc \"{Path.Combine(outputDir, "all_tc.txt")}\" --app-crc32 \"{Path.Combine(outputDir, "app_crc.txt")}\" --app-tc \"{Path.Combine(outputDir, "app_tc.txt")}\" --check-app-issues --info --info-format xml --info-file \"{Path.Combine(outputDir, "metadata.txt")}\"";
+            }
+            else if (tool == "raw2bmx")
+            {
+                string outputFile = Path.Combine(outputDir, "output.mxf");
+                args = $"-t op1a -o \"{outputFile}\" \"{txtInput.Text}\" {args}";
+                AppendLog($"raw2bmx command: {exe} {args}\r\n");
+            }
+
             lblStatus.Text = $"Running {tool}...";
             btnRun.Enabled = false;
 
@@ -271,6 +297,7 @@ namespace BmxGui
                 lblStatus.Text = $"Exit {result.ExitCode}";
                 AppendLog("=== Анализ MXF ===");
                 await DeepVerifyMXF(txtInput.Text);
+                await RunFFprobe(txtInput.Text);
             }
             catch (Exception ex)
             {
@@ -315,6 +342,55 @@ namespace BmxGui
             txtLog.ScrollToCaret();
         }
 
+        private async Task RunFFprobe(string filePath)
+        {
+            try
+            {
+                string ffprobePath = Path.Combine(Application.StartupPath, "ffprobe.exe");
+                if (!File.Exists(ffprobePath))
+                {
+                    AppendLog("Ошибка: ffprobe.exe не найден. Скачайте FFmpeg и поместите ffprobe.exe в bin\\Debug.\r\n");
+                    return;
+                }
+
+                string outputDir = Path.GetDirectoryName(filePath) ?? ".";
+                string ffprobeGopPath = Path.Combine(outputDir, "ffprobe_gop.txt");
+                string args = $"-show_frames -print_format flat \"{filePath}\"";
+
+                var ffprobeResult = await ToolRunner.RunAsync(ffprobePath, args, line => { }, line => { });
+
+                AppendLog("=== FFprobe Анализ ===\r\n");
+                if (!string.IsNullOrEmpty(ffprobeResult.StdOut))
+                {
+                    try
+                    {
+                        File.WriteAllText(ffprobeGopPath, ffprobeResult.StdOut);
+                        AppendLog(ffprobeResult.StdOut + "\r\n");
+                        int iFrames = ffprobeResult.StdOut.Split('\n').Count(line => line.Contains("pict_type=I"));
+                        int pFrames = ffprobeResult.StdOut.Split('\n').Count(line => line.Contains("pict_type=P"));
+                        AppendLog($"GOP структура: {iFrames} I-кадров, {pFrames} P-кадров\r\n");
+                    }
+                    catch (Exception ex)
+                    {
+                        AppendLog($"Ошибка записи ffprobe_gop.txt: {ex.Message}\r\n");
+                    }
+                }
+                else
+                {
+                    AppendLog("FFprobe не вернул данных.\r\n");
+                }
+
+                if (ffprobeResult.ExitCode != 0)
+                {
+                    AppendLog($"FFprobe ошибка: Код {ffprobeResult.ExitCode}, Сообщение: {ffprobeResult.StdErr}\r\n");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"Ошибка FFprobe: {ex.Message}\r\n");
+            }
+        }
+
         // === Расширенная проверка MXF ===
         private async Task DeepVerifyMXF(string filePath)
         {
@@ -337,26 +413,25 @@ namespace BmxGui
                 // Список всех проверок
                 var checks = new (string name, Func<(string, string, Color)> func)[]
                 {
-            ("Соответствие стандартам", () => CheckStandards(metadata, mi)),
-            ("Целостность контейнера", () => CheckContainer(metadata, mi)),
-            ("Потоки данных", () => CheckStreams(mi)),
-            ("Метаданные", () => CheckMetadata(metadata)),
-            ("Кодирование", () => CheckEncoding(mi)),
-            ("FrameRate / Timecode", () => CheckFrameRateTimecode(mi)),
-            ("Аудио каналы", () => CheckAudioChannels(mi)),
-            ("Синхронизация A/V", () => CheckDurationSync2(mi)),
-            ("Видео параметры", () => CheckVideoSpecs(mi)),
-            ("Audio Sample Rate", () => CheckAudioSampleRate(mi)),
-            ("Длительность потоков", () => CheckDurationSync(mi)),
-            ("Идентификаторы", () => CheckIdentifiers(mi)),
-
-            // Новые профессиональные проверки
-            ("Цветовая схема", () => CheckColorimetry(mi)),
-            ("Соотношение сторон", () => CheckAspectRatio(mi)),
-            ("GOP структура", () => CheckGopStructure(mi)),
-            ("Битрейт / Профиль", () => CheckBitrateProfile(mi)),
-            ("Timecode Continuity", () => CheckTimecodeContinuity(mi))
-
+                    ("Соответствие стандартам", () => CheckStandards(metadata, mi)),
+                    ("Целостность контейнера", () => CheckContainer(metadata, mi)),
+                    ("Потоки данных", () => CheckStreams(mi)),
+                    ("Метаданные", () => CheckMetadata(metadata)),
+                    ("Кодирование", () => CheckEncoding(mi)),
+                    ("FrameRate / Timecode", () => CheckFrameRateTimecode(mi)),
+                    ("Аудио каналы", () => CheckAudioChannels(mi)),
+                    ("Синхронизация A/V", () => CheckDurationSync2(mi)),
+                    ("Видео параметры", () => CheckVideoSpecs(mi)),
+                    ("Audio Sample Rate", () => CheckAudioSampleRate(mi)),
+                    ("Длительность потоков", () => CheckDurationSync(mi)),
+                    ("Идентификаторы", () => CheckIdentifiers(mi)),
+                    ("Цветовая схема", () => CheckColorimetry(mi)),
+                    ("Соотношение сторон", () => CheckAspectRatio(mi)),
+                    ("GOP структура", () => CheckGopStructure(mi)),
+                    ("Битрейт / Профиль", () => CheckBitrateProfile(mi)),
+                    ("Timecode Continuity", () => CheckTimecodeContinuity(mi)),
+                    ("CRC32 Essence", () => CheckCrc32(filePath)),
+                    ("APP Issues", () => CheckAppIssues(filePath))
                 };
 
                 progressBar.Maximum = checks.Length;
@@ -411,13 +486,18 @@ namespace BmxGui
             }
 
             AppendLog($"Запуск генерации metadata.txt через: {Path.GetFileName(mxf2rawExe)}");
-            AppendLog($"Команда: \"{mxf2rawExe}\" --info --info-file \"{metadataPath}\" \"{filePath}\"");
+            AppendLog($"Команда: \"{mxf2rawExe}\" --info --info-format xml --info-file \"{metadataPath}\" \"{filePath}\"");
 
             var result = await ToolRunner.RunAsync(mxf2rawExe,
-                $"--info --info-file \"{metadataPath}\" \"{filePath}\"",
+                $"--info --info-format xml --info-file \"{metadataPath}\" \"{filePath}\"",
                 s => AppendLog(s), s => AppendLog("[stderr] " + s));
 
             AppendLog($"Exit code: {result.ExitCode}");
+            if (result.ExitCode != 0)
+            {
+                AppendLog($"Ошибка mxf2raw/bmxparse: {result.StdErr}\r\n");
+            }
+
             for (int i = 0; i < 10; i++)
             {
                 if (File.Exists(metadataPath))
@@ -489,20 +569,22 @@ namespace BmxGui
 
         private (string, string, Color) CheckContainer(string metadata, MediaInfoHelper mi)
         {
-            if (string.IsNullOrEmpty(metadata))
+            if (mi.VideoCount > 0 || mi.AudioCount > 0)
             {
-                if (mi.VideoCount > 0 || mi.AudioCount > 0)
-                    return ("ОК", "Контейнер читается корректно (по MediaInfo)", Color.Green);
-                return ("Ошибка", "metadata.txt отсутствует и потоки не обнаружены", Color.Red);
-            }
+                if (string.IsNullOrEmpty(metadata))
+                {
+                    return ("Предупреждение", "metadata.txt отсутствует, но потоки обнаружены (по MediaInfo)", Color.Orange);
+                }
 
-            bool hasPartition = metadata.Contains("Partition");
-            bool hasEssence = metadata.Contains("Essence");
-            if (hasPartition && hasEssence)
-                return ("ОК", "Контейнер целый", Color.Green);
-            if (hasPartition || hasEssence)
-                return ("Предупреждение", "Частично неполная структура", Color.Orange);
-            return ("Ошибка", "Missing Partition; Missing Essence;", Color.Red);
+                bool hasPartition = metadata.Contains("Partition", StringComparison.OrdinalIgnoreCase);
+                bool hasEssence = metadata.Contains("Essence", StringComparison.OrdinalIgnoreCase);
+                if (hasPartition && hasEssence)
+                    return ("ОК", "Контейнер целый", Color.Green);
+                if (hasPartition || hasEssence)
+                    return ("Предупреждение", "Частично неполная структура (по metadata.txt)", Color.Orange);
+                return ("Ошибка", "Missing Partition; Missing Essence; (по metadata.txt)", Color.Red);
+            }
+            return ("Ошибка", "metadata.txt отсутствует и потоки не обнаружены", Color.Red);
         }
 
         private (string, string, Color) CheckStreams(MediaInfoHelper mi)
@@ -546,57 +628,124 @@ namespace BmxGui
 
         private (string, string, Color) CheckColorimetry(MediaInfoHelper mi)
         {
-            string color = mi.GetVideoParameter(0, "ColorSpace") ?? "";
+            string color = mi.GetColorSpace();
             string primaries = mi.GetVideoParameter(0, "ColorPrimaries") ?? "";
+            string chroma = mi.GetVideoParameter(0, "ChromaSubsampling") ?? "";
+            string transfer = mi.GetVideoParameter(0, "transfer_characteristics") ?? "";
 
-            if (string.IsNullOrWhiteSpace(color) && string.IsNullOrWhiteSpace(primaries))
-                return ("Предупреждение", "Не указано цветовое пространство", Color.Orange);
+            // Cross-check with ffprobe
+            string ffprobeGopPath = Path.Combine(Path.GetDirectoryName(txtInput.Text) ?? ".", "ffprobe_gop.txt");
+            string ffprobeColor = "";
+            string ffprobePrimaries = "";
+            if (File.Exists(ffprobeGopPath))
+            {
+                string ffprobeOutput = File.ReadAllText(ffprobeGopPath);
+                var colorLine = ffprobeOutput.Split('\n').FirstOrDefault(line => line.Contains("color_space="));
+                var primariesLine = ffprobeOutput.Split('\n').FirstOrDefault(line => line.Contains("color_primaries="));
+                ffprobeColor = colorLine?.Split('=')[1] ?? "";
+                ffprobePrimaries = primariesLine?.Split('=')[1] ?? "";
+            }
 
-            if (primaries.Contains("BT.709", StringComparison.OrdinalIgnoreCase))
-                return ("ОК", $"Colorimetry: Rec.709 ({color})", Color.Green);
+            if (string.IsNullOrWhiteSpace(color) && string.IsNullOrWhiteSpace(primaries) && string.IsNullOrWhiteSpace(ffprobeColor))
+            {
+                return ("Ошибка", "Неизвестное цветовое пространство (MediaInfo и ffprobe)", Color.Red);
+            }
 
-            if (primaries.Contains("BT.2020", StringComparison.OrdinalIgnoreCase))
-                return ("Предупреждение", $"Colorimetry: Rec.2020 (HDR контент)", Color.Orange);
+            string details = $"Color: {color}, Primaries: {primaries}, Chroma: {chroma}, Transfer: {transfer}, ffprobe: {ffprobeColor}, ffprobe primaries: {ffprobePrimaries}";
+            if ((primaries.Contains("BT.709", StringComparison.OrdinalIgnoreCase) || ffprobePrimaries.Contains("bt709")) && chroma.Contains("4:2:2"))
+            {
+                return ("ОК", details + " (Rec.709, YUV 4:2:2)", Color.Green);
+            }
+            if (primaries.Contains("BT.2020", StringComparison.OrdinalIgnoreCase) || ffprobePrimaries.Contains("bt2020"))
+            {
+                return ("Предупреждение", details + " (HDR, Rec.2020)", Color.Orange);
+            }
 
-            return ("Ошибка", $"Неизвестное цветовое пространство ({primaries})", Color.Red);
+            return ("Предупреждение", details + " (нестандартное пространство)", Color.Orange);
         }
 
         private (string, string, Color) CheckAspectRatio(MediaInfoHelper mi)
         {
-            string aspect = mi.GetVideoParameter(0, "DisplayAspectRatio") ?? "";
-            if (string.IsNullOrWhiteSpace(aspect))
+            string dar = mi.GetAspectRatio();
+            string sar = mi.GetVideoParameter(0, "PixelAspectRatio") ?? "";
+
+            if (string.IsNullOrWhiteSpace(dar))
+            {
                 return ("Предупреждение", "Соотношение сторон не указано", Color.Orange);
+            }
 
-            if (aspect.StartsWith("16:9"))
-                return ("ОК", "Соотношение 16:9", Color.Green);
-            if (aspect.StartsWith("4:3"))
-                return ("ОК", "Соотношение 4:3", Color.Green);
+            string details = $"DAR: {dar}, SAR: {sar}";
+            if (dar.Contains("16:9") || dar.Contains("1.78"))
+            {
+                return ("ОК", details + " (стандартное 16:9)", Color.Green);
+            }
+            if (dar.Contains("4:3") || dar.Contains("1.33"))
+            {
+                return ("ОК", details + " (стандартное 4:3)", Color.Green);
+            }
 
-            return ("Предупреждение", $"Нетипичное соотношение ({aspect})", Color.Orange);
+            return ("Предупреждение", details + " (нестандартное)", Color.Orange);
         }
 
         private (string, string, Color) CheckGopStructure(MediaInfoHelper mi)
         {
-            string gop = mi.GetVideoParameter(0, "GOP") ?? "";
-            string frameCount = mi.GetVideoParameter(0, "FrameCount") ?? "";
+            string details = "";
+            string gop = mi.GetGOP();
+            AppendLog($"MediaInfo GOP: {gop}\r\n");
 
-            if (string.IsNullOrEmpty(gop))
-                return ("Предупреждение", "Информация о GOP недоступна", Color.Orange);
-
-            if (int.TryParse(gop, out int gopLength))
+            // Check ffprobe output for cross-validation
+            string ffprobeGopPath = Path.Combine(Path.GetDirectoryName(txtInput.Text) ?? ".", "ffprobe_gop.txt");
+            if (File.Exists(ffprobeGopPath))
             {
-                if (gopLength <= 12)
-                    return ("ОК", $"GOP длина: {gopLength}", Color.Green);
-                if (gopLength <= 15)
-                    return ("Предупреждение", $"GOP длина: {gopLength} (на грани допустимого)", Color.Orange);
-                return ("Ошибка", $"Слишком длинный GOP ({gopLength})", Color.Red);
+                try
+                {
+                    string ffprobeOutput = File.ReadAllText(ffprobeGopPath);
+                    int iFrames = ffprobeOutput.Split('\n').Count(line => line.Contains("pict_type=I"));
+                    int pFrames = ffprobeOutput.Split('\n').Count(line => line.Contains("pict_type=P"));
+                    details = $"ffprobe: {iFrames} I-кадров, {pFrames} P-кадров";
+                }
+                catch (Exception ex)
+                {
+                    AppendLog($"Ошибка чтения ffprobe_gop.txt: {ex.Message}\r\n");
+                }
             }
 
-            // Альтернатива — текстовый анализ
-            if (gop.Contains("I") && gop.Contains("P"))
-                return ("ОК", "GOP структура содержит ключевые кадры", Color.Green);
+            if (string.IsNullOrEmpty(gop) && string.IsNullOrEmpty(details))
+            {
+                return ("Предупреждение", "Информация о GOP недоступна (MediaInfo и ffprobe)", Color.Orange);
+            }
 
-            return ("Ошибка", "Невозможно определить GOP структуру", Color.Red);
+            bool isValidGop = gop.Contains("I") && (gop.Contains("P") || gop.Contains("B"));
+            details = $"GOP структура: {gop}; {details}".TrimEnd(';', ' ');
+
+            int gopLength = 0;
+            if (gop.Contains("N="))
+            {
+                try
+                {
+                    var nPart = gop.Split("N=")[1].Split(" ")[0];
+                    int.TryParse(nPart, out gopLength);
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    return ("Предупреждение", $"Невозможно разобрать GOP (невалидный формат N=). {details}", Color.Orange);
+                }
+            }
+
+            if (gopLength > 0 && gopLength <= 12)
+            {
+                return ("ОК", details + $" (длина: {gopLength})", Color.Green);
+            }
+            if (gopLength > 12 && gopLength <= 15)
+            {
+                return ("Предупреждение", details + $" (длина: {gopLength}, на грани допустимого)", Color.Orange);
+            }
+            if (isValidGop)
+            {
+                return ("ОК", details + " (содержит I/P/B кадры)", Color.Green);
+            }
+
+            return ("Ошибка", $"Невалидная GOP структура. {details}", Color.Red);
         }
 
 
@@ -627,7 +776,7 @@ namespace BmxGui
 
             AppendLog("\r\n=== Исправление MXF ===");
 
-            string args = $"-t op1a -o \"{fixedFile}\" --check-complete --min-part \"{input}\"";
+            string args = $"-t op1a -o \"{fixedFile}\" --check-complete --min-part --umid \"{Guid.NewGuid():N}\" \"{input}\"";
             var result = await ToolRunner.RunAsync(exe, args, s => AppendLog(s), s => AppendLog(s));
 
             if (result.ExitCode == 0 && File.Exists(fixedFile))
@@ -721,13 +870,16 @@ namespace BmxGui
 
         private (string, string, Color) CheckIdentifiers(MediaInfoHelper mi)
         {
-            string umid = mi.GetGeneralParameter("UniqueID");
-            string uuid = mi.GetGeneralParameter("UUID");
+            string umid = mi.GetUMID();
+            string uuid = mi.GetGeneralParameter("UniqueID") ?? "";
 
             if (string.IsNullOrEmpty(umid) && string.IsNullOrEmpty(uuid))
+            {
                 return ("Предупреждение", "Отсутствуют UMID/UUID идентификаторы", Color.Orange);
+            }
 
-            return ("ОК", $"UMID: {(umid ?? "—")}, UUID: {(uuid ?? "—")}", Color.Green);
+            string details = $"UMID: {(umid ?? "—")}, UUID: {(uuid ?? "—")}";
+            return ("ОК", details, Color.Green);
         }
 
         private (string, string, Color) CheckBitrateProfile(MediaInfoHelper mi)
@@ -816,9 +968,9 @@ namespace BmxGui
             try
             {
                 string startTC = mi.GetGeneralParameter("TimeCode_FirstFrame") ??
-                                 mi.GetVideoParameter(0, "TimeCode_FirstFrame") ??
-                                 mi.GetGeneralParameter("TimeCode_Start") ??
-                                 mi.GetVideoParameter(0, "TimeCode_Start");
+                                mi.GetVideoParameter(0, "TimeCode_FirstFrame") ??
+                                mi.GetGeneralParameter("TimeCode_Start") ??
+                                mi.GetVideoParameter(0, "TimeCode_Start");
 
                 string endTC = mi.GetGeneralParameter("TimeCode_LastFrame") ??
                                mi.GetVideoParameter(0, "TimeCode_LastFrame") ??
@@ -828,26 +980,41 @@ namespace BmxGui
                 string durationStr = mi.GetVideoParameter(0, "Duration");
                 double.TryParse(durationStr?.Replace(",", ".") ?? "0", out double durationMs);
 
-                if (string.IsNullOrWhiteSpace(startTC) && string.IsNullOrWhiteSpace(endTC))
-                    return ("Предупреждение", "Таймкод не найден в метаданных MXF", Color.Orange);
+                string tcPath = Path.Combine(Path.GetDirectoryName(txtInput.Text) ?? ".", "all_tc.txt");
+                string tcDetails = "";
+                if (File.Exists(tcPath))
+                {
+                    string tcContent = File.ReadAllText(tcPath);
+                    if (tcContent.Contains("discontinuity", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return ("Ошибка", "Обнаружены разрывы таймкода в all_tc.txt", Color.Red);
+                    }
+                    tcDetails = $"all_tc.txt: {tcContent.Trim().Replace("\n", "; ")}";
+                }
+                else
+                {
+                    AppendLog($"Предупреждение: all_tc.txt не сгенерирован. Проверьте mxf2raw.\r\n");
+                }
 
-                if (!TimeSpan.TryParse(startTC.Replace(';', ':'), out var startTime))
+                if (string.IsNullOrWhiteSpace(startTC) && string.IsNullOrWhiteSpace(endTC) && string.IsNullOrEmpty(tcDetails))
+                {
+                    return ("Предупреждение", "Таймкод не найден в метаданных MXF или all_tc.txt", Color.Orange);
+                }
+
+                if (!TimeSpan.TryParse(startTC?.Replace(';', ':'), out var startTime))
                     startTime = TimeSpan.Zero;
 
-                if (!TimeSpan.TryParse(endTC.Replace(';', ':'), out var endTime))
+                if (!TimeSpan.TryParse(endTC?.Replace(';', ':'), out var endTime))
                     endTime = TimeSpan.Zero;
 
-                // вычисляем длительность по таймкоду (в секундах)
                 double tcDuration = (endTime - startTime).TotalMilliseconds;
                 if (tcDuration < 0)
-                    tcDuration += 24 * 60 * 60 * 1000; // если переход через сутки
+                    tcDuration += 24 * 60 * 60 * 1000;
 
-                // реальная длительность
                 double diff = Math.Abs(tcDuration - durationMs);
+                string details = $"Start TC: {startTC ?? "—"}, End TC: {endTC ?? "—"}, Δ={diff / 1000:F2} сек; {tcDetails}".TrimEnd(';', ' ');
 
-                string details = $"Start TC: {startTC}, End TC: {endTC}, Δ={diff / 1000:F2} сек";
-
-                if (diff < 100) // до 0.1 секунды
+                if (diff < 100)
                     return ("ОК", "Таймкод соответствует длительности — " + details, Color.Green);
                 if (diff < 1000)
                     return ("Предупреждение", "Незначительное расхождение таймкода — " + details, Color.Orange);
@@ -860,6 +1027,47 @@ namespace BmxGui
             }
         }
 
+        private (string, string, Color) CheckCrc32(string filePath)
+        {
+            string crcPath = Path.Combine(Path.GetDirectoryName(filePath) ?? ".", "app_crc.txt");
+            if (!File.Exists(crcPath))
+            {
+                AppendLog($"Предупреждение: CRC32 файл ({crcPath}) не сгенерирован. Проверьте права доступа или mxf2raw.\r\n");
+                return ("Предупреждение", "CRC32 файл не сгенерирован", Color.Orange);
+            }
+
+            try
+            {
+                string crc = File.ReadAllText(crcPath);
+                if (crc.Contains("error", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ("Ошибка", "CRC32 essence содержит ошибки", Color.Red);
+                }
+                return ("ОК", "CRC32 essence проверено", Color.Green);
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"Ошибка чтения app_crc.txt: {ex.Message}\r\n");
+                return ("Предупреждение", "Не удалось прочитать CRC32 файл", Color.Orange);
+            }
+        }
+
+        private (string, string, Color) CheckAppIssues(string filePath)
+        {
+            string appPath = Path.Combine(Path.GetDirectoryName(filePath) ?? ".", "app_tc.txt");
+            if (!File.Exists(appPath))
+            {
+                return ("Предупреждение", "APP timecode файл не сгенерирован", Color.Orange);
+            }
+
+            string app = File.ReadAllText(appPath);
+            if (app.Contains("issue", StringComparison.OrdinalIgnoreCase) || app.Contains("error", StringComparison.OrdinalIgnoreCase))
+            {
+                return ("Ошибка", "APP issues обнаружены", Color.Red);
+            }
+
+            return ("ОК", "APP timecode проверено", Color.Green);
+        }
 
     }
 }

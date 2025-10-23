@@ -120,6 +120,18 @@ namespace BmxGui
         public string GetAudioParameter(int index, string name)
             => Get(StreamKind.Audio, index, name);
 
+        public string GetGOP()
+            => Get(StreamKind.Video, 0, "GOP");
+
+        public string GetColorSpace()
+            => Get(StreamKind.Video, 0, "colour_space");
+
+        public string GetAspectRatio()
+            => Get(StreamKind.Video, 0, "DisplayAspectRatio/String");
+
+        public string GetUMID()
+            => Get(StreamKind.General, 0, "UMID");
+
         // === Подсчёт треков ===
         public int VideoCount
         {
